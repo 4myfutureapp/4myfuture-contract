@@ -15,21 +15,25 @@ use crate::metadata::*;
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize, PanicOnDefault)]
 pub struct Contract {
-    pub owner_id: AccountId,
-    pub proposal_per_owner: LookupMap<AccountId, String>,
-    pub proposal_by_id: LookupMap<ProposalId, Proposal>,
-    pub proposal_metadata_by_id: LookupMap<ProposalId, ProposalMetadata>,
-    pub contributions_per_user: LookupMap<AccountId, Contribution>,
-    pub metadata: LazyOption<ForMyFutureContractMetadata>,
+    pub owner_id: AccountId, //Contract owner
+    pub proposal_per_owner: LookupMap<AccountId, Proposal>, //Link owners with Proposal
+    pub proposal_by_id: LookupMap<ProposalId, Proposal>, //Link proposals ID with Proposal
+    pub proposal_metadata_by_id: LookupMap<ProposalId, ProposalMetadata>, //Link Proposals ID with Proposal Metadata  
+    pub contributions_per_user: LookupMap<AccountId, Contribution>, //Link users and contributions
+    pub contributions_per_id: LookupMap<ContributionId, Contribution>, //Link Contributions ID with Contribution
+    pub metadata: LazyOption<ForMyFutureContractMetadata>, //Contract Metadata
 }
 
+
+//Keys for persistent collections
 #[derive(BorshSerialize)]
 pub enum StorageKey {
     ProposalsPerOwner,
     ProposalsById,
     ProposalMetadataById,
     ContributionsperUser,
-    MyFutureContractMetadata
+    MyFutureContractMetadata,
+    ContributionsById
 }
 
 #[near_bindgen]
@@ -37,7 +41,7 @@ impl Contract {
 
 
     #[init]
-    pub fn new_default_meta(owner_id: AccountId) -> Self {
+    pub fn new_meta(owner_id: AccountId) -> Self { //Method for initialize contract 
         
         Self::new(
             owner_id,
@@ -48,7 +52,7 @@ impl Contract {
     }
     
     #[init]
-    pub fn new(owner_id: AccountId, metadata: ForMyFutureContractMetadata) -> Self {
+    pub fn new(owner_id: AccountId, metadata: ForMyFutureContractMetadata) -> Self { //Method called by new_meta for initialized all persistent collections
         let this = Self {
             owner_id: owner_id,
             proposal_per_owner: LookupMap::new(StorageKey::ProposalsPerOwner.try_to_vec().unwrap()),
@@ -59,6 +63,7 @@ impl Contract {
             contributions_per_user: LookupMap::new(
                 StorageKey::ContributionsperUser.try_to_vec().unwrap(),
             ),
+            contributions_per_id: LookupMap::new(StorageKey::ContributionsById.try_to_vec().unwrap()),
             metadata: LazyOption::new(
                 StorageKey::MyFutureContractMetadata.try_to_vec().unwrap(),
                 Some(&metadata),
