@@ -7,44 +7,44 @@ pub type Date = u64;
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Clone)]
 #[serde(crate = "near_sdk::serde")]
 pub struct ForMyFutureContractMetadata {
-    owner_id: AccountId,
+    pub name: String,
 }
 
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Clone)]
 #[serde(crate = "near_sdk::serde")]
 pub struct ProposalMetadata {
-    id: ProposalId,
-    title: String,
-    description: String,
-    goal: U128,
-    funds: u128,
-    init_date: Date,
-    finish_date: Date,
-    institution_link: String,
-    pensum_link: String,
-    images: Vec<String>
+    pub id: ProposalId,
+    pub title: String,
+    pub description: String,
+    pub goal: U128,
+    pub funds: u128,
+    pub init_date: Date,
+    pub finish_date: Date,
+    pub institution_link: String,
+    pub pensum_link: String,
+    pub images: Vec<String>
 
 }
 
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Clone)]
 #[serde(crate = "near_sdk::serde")]
 pub struct Proposal {
-    id: ProposalId,
-    owner: AccountId,
-    metadata: ProposalMetadata,
-    image: String,
-    status: i8
+    pub id: ProposalId,
+    pub owner: AccountId,
+    pub metadata: ProposalMetadata,
+    pub image: String,
+    pub status: i8
 }
 
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Clone)]
 #[serde(crate = "near_sdk::serde")]
 pub struct Contribution {
-    id: ContributionId,
-    from: AccountId,
-    by: AccountId,
-    proposal_id: ProposalId,
-    amount: Balance,
-    image: String
+    pub id: ContributionId,
+    pub from: AccountId,
+    pub by: AccountId,
+    pub proposal_id: ProposalId,
+    pub amount: Balance,
+    pub image: String
 }
 
 pub trait ContractMetadata {
