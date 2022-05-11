@@ -1,23 +1,22 @@
 use crate::*;
 
-pub type ProposalId = U128;
+pub type ProposalId = i128;
 pub type ContributionId = U128;
 pub type Date = u64;
 
-#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Clone)]
-#[serde(crate = "near_sdk::serde")]
 
 //Metadata need for init the contract
+#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Clone)]
+#[serde(crate = "near_sdk::serde")]
 pub struct ForMyFutureContractMetadata { 
     pub name: String, //Only for initialization purposes
 }
 
-#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Clone)]
-#[serde(crate = "near_sdk::serde")]
 
 //This structure has the general information about proposal
-pub struct ProposalMetadata { 
-    pub id: ProposalId,        
+#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Clone)]
+#[serde(crate = "near_sdk::serde")]
+pub struct ProposalMetadata {        
     pub title: String,
     pub description: String,
     pub goal: U128,
