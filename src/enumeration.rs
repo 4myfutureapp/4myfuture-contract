@@ -6,7 +6,11 @@ impl Contract {
         return U128(self.proposal_by_id.len() as u128);
     }
 
-    pub fn get_proposals(&self) -> Vec<Proposal> {
+    pub fn proposals(&self) -> Vec<Proposal> {
         return self.proposal_by_id.values_as_vector().to_vec();
+    }
+
+    pub fn contributions(&self) -> Vec<Contribution> {
+        return self.contributions_per_id.values_as_vector().to_vec();
     }
 }

@@ -4,7 +4,7 @@ use near_sdk::json_types::{U128, U64};
 use near_sdk::serde::{Deserialize, Serialize};
 use near_sdk::{
     assert_one_yocto, env, ext_contract, near_bindgen, AccountId, Balance, BorshStorageKey,
-    CryptoHash, Gas, PanicOnDefault, Promise,
+    CryptoHash, Gas, PanicOnDefault, Promise, serde_json::json
 };
 use std::collections::HashMap;
 
@@ -28,7 +28,7 @@ pub struct Contract {
     pub proposal_per_owner: LookupMap<AccountId, Proposal>, //Link owners with Proposal
     pub proposal_by_id: UnorderedMap<ProposalId, Proposal>, //Link proposals ID with Proposal
     pub proposal_metadata_by_id: LookupMap<ProposalId, ProposalMetadata>, //Link Proposals ID with Proposal Metadata  
-    pub contributions_per_user: LookupMap<AccountId, Contribution>, //Link users and contributions
+    pub contributions_per_user: LookupMap<AccountId, UnorderedSet<Contribution>>, //Link users and contributions
     pub contributions_per_id: UnorderedMap<ContributionId, Contribution>, //Link Contributions ID with Contribution
     pub metadata: LazyOption<ForMyFutureContractMetadata>, //Contract Metadata
 }
@@ -40,7 +40,8 @@ pub enum StorageKey {
     ProposalsPerOwner,
     ProposalsById,
     ProposalMetadataById,
-    ContributionsperUser,
+    ContributionsPerUser,
+    ContributionsPerUserInner{ account_id_hash: CryptoHash },
     MyFutureContractMetadata,
     ContributionsById
 }
@@ -70,7 +71,7 @@ impl Contract {
                 StorageKey::ProposalMetadataById.try_to_vec().unwrap(),
             ),
             contributions_per_user: LookupMap::new(
-                StorageKey::ContributionsperUser.try_to_vec().unwrap(),
+                StorageKey::ContributionsPerUser.try_to_vec().unwrap(),
             ),
             contributions_per_id: UnorderedMap::new(StorageKey::ContributionsById.try_to_vec().unwrap()),
             metadata: LazyOption::new(

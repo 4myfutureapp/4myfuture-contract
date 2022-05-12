@@ -1,6 +1,6 @@
 use crate::*;
 
-pub type ProposalId = i128;
+pub type ProposalId = U128;
 pub type ContributionId = U128;
 pub type Date = u64;
 
@@ -46,7 +46,7 @@ pub struct Proposal {
 pub struct Contribution {
     pub id: ContributionId,
     pub from: AccountId,
-    pub by: AccountId,
+    pub to: AccountId,
     pub proposal_id: ProposalId,
     pub amount: Balance,
     pub image: String //Main proposal link image

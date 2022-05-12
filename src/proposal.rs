@@ -9,7 +9,7 @@ impl Contract {
         goal: U128,
         institution_link: String,
         pensum_link: String,
-        finish_date: u64,
+        finish_date: Date,
         images: Vec<String>,
     ) {
         assert!(goal.0 > 0, "Invalid amount provided");
@@ -20,7 +20,7 @@ impl Contract {
         );
 
         let goal_in_yocto = U128(goal.0 * ONE_NEAR);
-        let index = i128::from(self.proposal_by_id.len() + 1);
+        let index = U128((self.proposal_by_id.len() + 1) as u128);
         let initial_storage_usage = env::storage_usage();
 
         let proposal_metadata = ProposalMetadata {
@@ -38,13 +38,31 @@ impl Contract {
         let proposal = Proposal {
             id: index,
             owner: env::signer_account_id().to_string(),
-            metadata: proposal_metadata,
+            metadata: proposal_metadata.clone(),
             image: images[0].clone(),
             status: 0,
         };
 
-        self.add_proposal_to_storages(proposal, env::signer_account_id());
+        self.add_proposal_to_storages(proposal.clone(), env::signer_account_id());
+        env::log(
+            json!({
+                "type": "create_proposal",
+                "params":{
+                    "proposal_id":proposal.id.0.to_string(),
+                    "owner": proposal.owner
+                }
+            })
+            .to_string()
+            .as_bytes(),
+        );
+    }
 
-    //CREATE LOG FOR CREATE PROPOSAL
+    #[payable]
+    pub fn contribute(&mut self, proposal_id: ProposalId) {
+        assert!(env::attached_deposit() > 0 as u128, "Invalid contribution amount");
+        assert!(self.proposal_by_id.get(&proposal_id).is_some(), "Invalid proposal id");
+        let proposal = self.proposal_by_id.get(&proposal_id).unwrap();
+        assert!(proposal.owner != env::signer_account_id(), "You can't contribute your own proposal");
+        self.process_contribution(env::attached_deposit(), proposal);
     }
 }
