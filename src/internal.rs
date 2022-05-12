@@ -1,6 +1,15 @@
 use crate::*;
 use near_sdk::{CryptoHash};
 
+
+pub(crate) fn hash_account_id(account_id: &AccountId) -> CryptoHash {
+    //get the default hash
+    let mut hash = CryptoHash::default();
+    //we hash the account ID and return it
+    hash.copy_from_slice(&env::sha256(account_id.as_bytes()));
+    hash
+}
+
 #[near_bindgen]
 impl Contract {
 
@@ -40,7 +49,7 @@ impl Contract {
     }
 
     pub(crate) fn process_contribution(&mut self, amount: Balance, mut proposal: Proposal) {
-
+        let user = env::signer_account_id();
         let mut proposal_meta = self.proposal_metadata_by_id.get(&proposal.id).unwrap();   
         Promise::new(proposal.owner.clone()).transfer(amount);
         proposal.metadata.funds += amount;
@@ -50,28 +59,25 @@ impl Contract {
         let index = U128(self.contributions_per_id.len() as u128);
         let contribution = Contribution { // Create the contribution object
             id: index,
-            from: env::signer_account_id(),
+            from: user.clone(),
             to: proposal.owner.clone(),
             proposal_id: proposal.id,
             amount: env::attached_deposit(),
             image: proposal_meta.images[0].to_string()
         };
         self.contributions_per_id.insert(&index, &contribution); //Insert contribution in collection
-
-        let mut hash = CryptoHash::default(); //Hash for encode accountId
-        hash.copy_from_slice(&env::sha256(proposal.owner.as_bytes().clone()));
-        let mut contributions_set = self.contributions_per_user.get(&env::signer_account_id()).unwrap_or_else(|| { //Check if user already has contributions made, if not it will create an empty collection
+        let mut contributions_set = self.contributions_per_user.get(&user).unwrap_or_else(|| { //Check if user already has contributions made, if not it will create an empty collection
             
             UnorderedSet::new(
                 StorageKey::ContributionsPerUserInner {
-                    account_id_hash: hash //acount id hashed into collection as key for avoid collisions
+                    account_id_hash: hash_account_id(&proposal.owner) //acount id hashed into collection as key for avoid collisions
                 }
                 .try_to_vec()
                 .unwrap(),
             )
         });
-        contributions_set.insert(&contribution); //Insert the contribution object within the user collection
-        self.contributions_per_user.insert(&proposal.owner, &contributions_set); 
+        contributions_set.insert(&contribution); //Insert the contribution object within the user
+        self.contributions_per_user.insert(&user, &contributions_set);
         env::log(
             json!({
                 "type": "create_contribution",
@@ -88,6 +94,7 @@ impl Contract {
         );
     }
 
+    
         pub(crate) fn valid_contribution_amount(&self, proposal: Proposal, contribution_amount: Balance) {
             assert!(contribution_amount > 0, "invalid contribution amount");
             assert!(proposal.owner != env::signer_account_id(), "Can't contribute your own proposal");
