@@ -4,7 +4,7 @@ use near_sdk::{CryptoHash};
 #[near_bindgen]
 impl Contract {
 
-    pub(crate) fn user_with_active_proposal(&self, account_id: AccountId) -> bool {
+    pub(crate) fn user_with_active_proposal(&self, account_id: AccountId) -> bool { //Check if user has an active proposal (status == 0)
         if !self.proposal_per_owner.contains_key(&account_id) {
             return false 
         }
@@ -15,31 +15,40 @@ impl Contract {
         false
     }
 
-    pub(crate) fn add_proposal_to_storages(&mut self, proposal: Proposal, account_id: AccountId) {
+    pub(crate) fn add_proposal_to_storages(&mut self, proposal: Proposal, account_id: AccountId) { //Update the contract proposal collections with new data
         self.proposal_by_id.insert(&proposal.id, &proposal);
         self.proposal_metadata_by_id.insert(&proposal.id, &proposal.metadata);
         self.proposal_per_owner.insert(&account_id, &proposal);
     }
 
-    pub(crate) fn set_update_proposal(&mut self, proposal_id: ProposalId, status: i8) {
+    pub(crate) fn update_proposal(&mut self, proposal_id: ProposalId, status: i8) { //status 1: complete ---- status 2: Inactive
         let mut proposal = self.proposal_by_id.get(&proposal_id).unwrap();
         proposal.status = status;
-        self.proposal_by_id.insert(&proposal_id, &proposal);
+        self.add_proposal_to_storages(proposal.clone(), proposal.owner.clone());
+        env::log(
+            json!({
+                "type": "update_proposal",
+                "params":{
+                    "id": proposal.id.0.to_string(),
+                    "owner": proposal.owner.to_string(),
+                    "status": proposal.status.to_string()
+                }
+            })
+            .to_string()
+            .as_bytes(),
+        );
     }
 
     pub(crate) fn process_contribution(&mut self, amount: Balance, mut proposal: Proposal) {
 
-        let mut proposal_meta = self.proposal_metadata_by_id.get(&proposal.id).unwrap();
-        let mut hash = CryptoHash::default();
-        hash.copy_from_slice(&env::sha256(proposal.owner.as_bytes().clone()));
+        let mut proposal_meta = self.proposal_metadata_by_id.get(&proposal.id).unwrap();   
         Promise::new(proposal.owner.clone()).transfer(amount);
         proposal.metadata.funds += amount;
         proposal_meta.funds += amount;
-        self.proposal_by_id.insert(&proposal.id, &proposal);
-        self.proposal_metadata_by_id.insert(&proposal.id, &proposal_meta);
+        self.add_proposal_to_storages(proposal.clone(), proposal.owner.clone()); //Update the proposal funds attribute
 
         let index = U128(self.contributions_per_id.len() as u128);
-        let contribution = Contribution {
+        let contribution = Contribution { // Create the contribution object
             id: index,
             from: env::signer_account_id(),
             to: proposal.owner.clone(),
@@ -47,27 +56,29 @@ impl Contract {
             amount: env::attached_deposit(),
             image: proposal_meta.images[0].to_string()
         };
-        self.contributions_per_id.insert(&index, &contribution);
+        self.contributions_per_id.insert(&index, &contribution); //Insert contribution in collection
 
-        let mut contributions_set = self.contributions_per_user.get(&env::signer_account_id()).unwrap_or_else(|| {
+        let mut hash = CryptoHash::default(); //Hash for encode accountId
+        hash.copy_from_slice(&env::sha256(proposal.owner.as_bytes().clone()));
+        let mut contributions_set = self.contributions_per_user.get(&env::signer_account_id()).unwrap_or_else(|| { //Check if user already has contributions made, if not it will create an empty collection
             
             UnorderedSet::new(
                 StorageKey::ContributionsPerUserInner {
-                    account_id_hash: hash
+                    account_id_hash: hash //acount id hashed into collection as key for avoid collisions
                 }
                 .try_to_vec()
                 .unwrap(),
             )
         });
-        contributions_set.insert(&contribution);
-        self.contributions_per_user.insert(&proposal.owner, &contributions_set);
+        contributions_set.insert(&contribution); //Insert the contribution object within the user collection
+        self.contributions_per_user.insert(&proposal.owner, &contributions_set); 
         env::log(
             json!({
                 "type": "create_contribution",
                 "params":{
                     "id": contribution.id.0.to_string(),
-                    "from": contribution.from,
-                    "to": contribution.to,
+                    "from": contribution.from.to_string(),
+                    "to": contribution.to.to_string(),
                     "proposal_id": contribution.proposal_id.0.to_string(),
                     "amount": contribution.amount.to_string()
                 }
@@ -77,12 +88,13 @@ impl Contract {
         );
     }
 
-        pub fn hash_account_id(account_id: &AccountId) -> CryptoHash {
-            //get the default hash
-            let mut hash = CryptoHash::default();
-            //we hash the account ID and return it
-            hash.copy_from_slice(&env::sha256(account_id.as_bytes()));
-            hash
+        pub(crate) fn valid_contribution_amount(&self, proposal: Proposal, contribution_amount: Balance) {
+            assert!(contribution_amount > 0, "invalid contribution amount");
+            assert!(proposal.owner != env::signer_account_id(), "Can't contribute your own proposal");
+            let current_funds = contribution_amount + proposal.metadata.funds;
+            assert!(current_funds <= proposal.metadata.goal.0, "Contribution higher than expected");
         }
+
+       
     }
 
