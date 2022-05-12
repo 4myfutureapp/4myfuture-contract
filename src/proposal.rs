@@ -2,6 +2,8 @@ use crate::*;
 
 #[near_bindgen]
 impl Contract {
+
+    //Main contract function for create proposals
     pub fn create_proposal(
         &mut self,
         title: String,
@@ -12,18 +14,18 @@ impl Contract {
         finish_date: Date,
         images: Vec<String>,
     ) {
-        assert!(goal.0 > 0, "Invalid amount provided");
+        assert!(goal.0 > 0, "Invalid amount provided"); //Goal required need to be higher than zero
         let user_id = env::signer_account_id().to_string();
         assert!(
-            !self.user_with_active_proposal(user_id),
+            !self.user_with_active_proposal(user_id), //Check if user have an active proposal
             "User already have one active proposal"
         );
 
-        let goal_in_yocto = U128(goal.0 * ONE_NEAR);
+        let goal_in_yocto = U128(goal.0 * ONE_NEAR); //Parse from NEAR to Yocto
         let index = U128((self.proposal_by_id.len() + 1) as u128);
         let initial_storage_usage = env::storage_usage();
 
-        let proposal_metadata = ProposalMetadata {
+        let proposal_metadata = ProposalMetadata { //Create the proposal metadata
             title: title,
             description: description,
             goal: goal_in_yocto,
@@ -35,7 +37,7 @@ impl Contract {
             pensum_link: pensum_link,
         };
 
-        let proposal = Proposal {
+        let proposal = Proposal { //Inser the proposal metadata into Proposal object
             id: index,
             owner: env::signer_account_id().to_string(),
             metadata: proposal_metadata.clone(),
@@ -43,13 +45,14 @@ impl Contract {
             status: 0,
         };
 
-        self.add_proposal_to_storages(proposal.clone(), env::signer_account_id());
+        self.add_proposal_to_storages(proposal.clone(), env::signer_account_id()); //Update the collections
         env::log(
             json!({
                 "type": "create_proposal",
                 "params":{
                     "proposal_id":proposal.id.0.to_string(),
-                    "owner": proposal.owner
+                    "owner": proposal.owner.to_string(),
+                    "status": proposal.status.to_string()
                 }
             })
             .to_string()
@@ -57,12 +60,25 @@ impl Contract {
         );
     }
 
+    //Inactive proposal and disable funding option
+    pub fn inactive_proposal(&mut self, proposal_id: ProposalId) { //Inactive proposal from owner id
+        assert!(env::signer_account_id() == self.owner_id, "Only owner can call this function");
+        self.update_proposal(proposal_id, 2); //Update the proposal status to "Inactive"
+    }
+
+    //Contribute function
     #[payable]
     pub fn contribute(&mut self, proposal_id: ProposalId) {
-        assert!(env::attached_deposit() > 0 as u128, "Invalid contribution amount");
-        assert!(self.proposal_by_id.get(&proposal_id).is_some(), "Invalid proposal id");
+        assert!(self.proposal_by_id.get(&proposal_id).is_some(), "Invalid proposal id"); //Check if proposal exist
         let proposal = self.proposal_by_id.get(&proposal_id).unwrap();
-        assert!(proposal.owner != env::signer_account_id(), "You can't contribute your own proposal");
-        self.process_contribution(env::attached_deposit(), proposal);
+        assert!(proposal.status == 0, "Proposal not active"); //Check if proposal is able to receive funding
+        self.valid_contribution_amount(proposal.clone(), env::attached_deposit()); //Check if the contribution is valid
+        self.process_contribution(env::attached_deposit(), proposal.clone());  //Function for process the contribution and Log the transaction
+        let proposa_meta = self.proposal_metadata_by_id.get(&proposal.id).unwrap();
+        if proposa_meta.goal.0 == proposa_meta.funds { //Check if proposal goal is reached
+            self.update_proposal(proposal.id, 1); //1 for status "Complete"
+        }
     }
+
+    
 }
