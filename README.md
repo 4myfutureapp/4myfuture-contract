@@ -1,20 +1,20 @@
-##4MyFuture-Contract V2 🚀🎓
+4MyFuture-Contract V2 🚀🎓
 ==================
 
 This smart contract was created on Rust
 4MyFuture DApp is a crowdfunding application made for students, in which they will have the oportunity to request fund
 to the NEAR Ecosystem Community, explaining why they need the funds, uploading images, descriptions and much more 😎
 
-#Compile the Contract
+Compile the Contract 💻
 ====================
 
 Before you compile this code, you will need to install Rust with [correct target]
 For compile the code just run the following script: 
 `sh scripts/build.sh`
-It will generate the .wasm file and will deploy it on testnet 😎 
+It will generate the .wasm file and will deploy it on testnet 
 
 
-#Exploring The Code
+Exploring The Code 😎
 ==================
 
 The main smart contract code lives in `src` folder.
