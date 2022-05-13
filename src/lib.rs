@@ -14,6 +14,7 @@ mod proposal;
 mod internal;
 mod enumeration;
 mod migration;
+mod xcctest;
 
 
 use crate::metadata::*;
@@ -65,8 +66,6 @@ pub enum StorageKey {
 
 #[near_bindgen]
 impl NewContract {
-
-    
 
     #[init]
     pub fn new_meta(owner_id: AccountId) -> Self { //Method for initialize contract 
