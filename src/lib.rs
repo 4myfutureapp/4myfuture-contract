@@ -13,18 +13,20 @@ mod metadata;
 mod proposal;
 mod internal;
 mod enumeration;
+mod migration;
 
 
 use crate::metadata::*;
 use crate::proposal::*;
 use crate::internal::*;
 use crate::enumeration::*;
+use crate::migration::*;
 
 const ONE_NEAR: Balance = 1000000000000000000000000;
 
-#[near_bindgen]
+
 #[derive(BorshDeserialize, BorshSerialize, PanicOnDefault)]
-pub struct Contract {
+pub struct OldContract {
     pub owner_id: AccountId, //Contract owner
     pub proposal_per_owner: LookupMap<AccountId, Proposal>, //Link owners with Proposal
     pub proposal_by_id: UnorderedMap<ProposalId, Proposal>, //Link proposals ID with Proposal
@@ -32,6 +34,20 @@ pub struct Contract {
     pub contributions_per_user: LookupMap<AccountId, UnorderedSet<Contribution>>, //Link users and contributions
     pub contributions_per_id: UnorderedMap<ContributionId, Contribution>, //Link Contributions ID with Contribution
     pub metadata: LazyOption<ForMyFutureContractMetadata>, //Contract Metadata
+    
+}
+
+#[near_bindgen]
+#[derive(BorshDeserialize, BorshSerialize, PanicOnDefault)]
+pub struct NewContract {
+    pub owner_id: AccountId, 
+    pub proposal_per_owner: LookupMap<AccountId, Proposal>, 
+    pub proposal_by_id: UnorderedMap<ProposalId, Proposal>, 
+    pub proposal_metadata_by_id: LookupMap<ProposalId, ProposalMetadata>, 
+    pub contributions_per_user: LookupMap<AccountId, UnorderedSet<Contribution>>, 
+    pub contributions_per_id: UnorderedMap<ContributionId, Contribution>, 
+    pub metadata: LazyOption<ForMyFutureContractMetadata>, 
+    pub proposal_from_migration: LookupMap<AccountId, ProposalId > //NEW FEATURE FOR MIGRATION
 }
 
 
@@ -48,8 +64,9 @@ pub enum StorageKey {
 }
 
 #[near_bindgen]
-impl Contract {
+impl NewContract {
 
+    
 
     #[init]
     pub fn new_meta(owner_id: AccountId) -> Self { //Method for initialize contract 
@@ -79,6 +96,7 @@ impl Contract {
                 StorageKey::MyFutureContractMetadata.try_to_vec().unwrap(),
                 Some(&metadata),
             ),
+           proposal_from_migration: LookupMap::new(b"b".to_vec())
         };
 
         //return the Contract object
