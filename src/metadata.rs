@@ -59,7 +59,7 @@ pub trait ContractMetadata {
 
 //Shows the contract metadata in a view method
 #[near_bindgen]
-impl ContractMetadata for NewContract {
+impl ContractMetadata for Contract {
     fn contract_metadata(&self) -> ForMyFutureContractMetadata {
         return self.metadata.get().unwrap();
     }

@@ -1,7 +1,7 @@
 use crate::*;
 
 #[near_bindgen]
-impl NewContract {
+impl Contract {
     //Main contract function for create proposals
     pub fn create_proposal(
         &mut self,
