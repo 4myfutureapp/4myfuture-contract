@@ -35,6 +35,15 @@ pub struct ProposalMetadata {
 pub struct Proposal {
     pub id: ProposalId,
     pub owner: AccountId,
+    pub image: String, //the main image, it will be get from the first array position
+    pub status: i8 //the status will be represent by an integer from 0 to 2
+}
+
+#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize, Clone)]
+#[serde(crate = "near_sdk::serde")]
+pub struct ProposalJSON {
+    pub id: ProposalId,
+    pub owner: AccountId,
     pub metadata: ProposalMetadata,
     pub image: String, //the main image, it will be get from the first array position
     pub status: i8 //the status will be represent by an integer from 0 to 2
