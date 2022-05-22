@@ -41,7 +41,6 @@ impl Contract {
             //Inser the proposal metadata into Proposal object
             id: index,
             owner: env::signer_account_id().to_string(),
-            image: images[0].clone(),
             status: 0,
         };
 
@@ -51,8 +50,7 @@ impl Contract {
                     "id":proposal.id.0.to_string(),
                     "owner": proposal.owner.to_string(),
                     "status": proposal.status,
-                    "image": proposal.image.to_string(),
-            })
+                })
             .to_string()
             .as_bytes(),
         );

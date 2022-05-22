@@ -20,7 +20,6 @@ impl Contract {
                 id: proposal.id,
                 owner: proposal.owner,
                 metadata: proposal_metadata.clone(),
-                image: proposal_metadata.images[0].clone(),
                 status: proposal.status
 
             })
