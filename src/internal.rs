@@ -108,8 +108,24 @@ impl Contract {
                     "from": contribution.from.to_string(),
                     "to": contribution.to.to_string(),
                     "proposal_id": contribution.proposal_id.0.to_string(),
-                    "amount": contribution.amount as i64,
+                    "amount": contribution.amount.to_string(),
                     "image": contribution.image.to_string()
+            })
+            .to_string()
+            .as_bytes(),
+        );
+        env::log(
+            json!({
+                    "id": proposal.id.0.to_string(),
+                    "title": proposal_meta.title.to_string(),
+                    "description": proposal_meta.description.to_string(),
+                    "goal": proposal_meta.goal.0.to_string(),
+                    "init_date": proposal_meta.init_date.to_string(),
+                    "finish_date": proposal_meta.finish_date.to_string(),
+                    "funds": proposal_meta.funds.to_string(),
+                    "images": proposal_meta.images,
+                    "institution_link": proposal_meta.institution_link.to_string(),
+                    "pensum_link": proposal_meta.pensum_link.to_string()
             })
             .to_string()
             .as_bytes(),
