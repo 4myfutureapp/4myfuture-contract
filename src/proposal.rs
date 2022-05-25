@@ -3,6 +3,7 @@ use crate::*;
 #[near_bindgen]
 impl Contract {
     //Main contract function for create proposals
+    #[payable]
     pub fn create_proposal(
         &mut self,
         title: String,
@@ -69,7 +70,10 @@ impl Contract {
             })
             .to_string()
             .as_bytes(),
-        )
+        );
+        let required_storage_in_bytes = env::storage_usage() - initial_storage_usage;
+        refund_deposit(required_storage_in_bytes);
+
     }
 
     //Inactive proposal and disable funding option
@@ -93,10 +97,11 @@ impl Contract {
         assert!(proposal.status == 0, "Proposal not active"); //Check if proposal is able to receive funding
         self.valid_contribution_amount(proposal.clone(), env::attached_deposit()); //Check if the contribution is valid
         self.process_contribution(env::attached_deposit(), proposal.clone()); //Function for process the contribution and Log the transaction
-        let proposa_meta = self.proposal_metadata_by_id.get(&proposal.id).unwrap();
-        if proposa_meta.goal.0 == proposa_meta.funds {
+        let proposa_metal = self.proposal_metadata_by_id.get(&proposal.id).unwrap();
+        if proposa_metal.goal.0 == proposa_metal.funds {
             //Check if proposal goal is reached
             self.update_proposal(proposal.id, 1); //1 for status "Complete"
         }
+        
     }
 }
