@@ -1,22 +1,31 @@
 use crate::*;
 
 #[near_bindgen]
-impl NewContract {
+impl Contract {
     pub fn proposal_total_supply(&self) -> U128 {
-        return U128(self.proposal_by_id.len() as u128);
-    }
-
-    pub fn proposals(&self) -> Vec<Proposal> {
-        return self.proposal_by_id.values_as_vector().to_vec();
+        return U128(self.proposal_metadata_by_id.len() as u128);
     }
 
     pub fn contributions(&self) -> Vec<Contribution> {
         return self.contributions_per_id.values_as_vector().to_vec();
     }
 
-    pub fn proposal_by_id(&self, proposal_id: ProposalId) -> Option<Proposal> {
-        let proposal = self.proposal_by_id.get(&proposal_id);
-        return proposal
+    pub fn proposal_by_id(&self, proposal_id: ProposalId) -> Option<ProposalJSON> {
+        //if there is some token ID in the tokens_by_id collection
+        if let Some(proposal) = self.proposal_by_id.get(&proposal_id) {
+            //we'll get the metadata for that token
+            let proposal_metadata = self.proposal_metadata_by_id.get(&proposal_id).unwrap();
+            //we return the JsonToken (wrapped by Some since we return an option)
+            Some(ProposalJSON {
+                id: proposal.id,
+                owner: proposal.owner,
+                metadata: proposal_metadata.clone(),
+                status: proposal.status
+
+            })
+        } else { //if there wasn't a token ID in the tokens_by_id collection, we return None
+            None
+        }
     }
 
     pub fn contribution_by_id(&self, contribution_id: ContributionId) -> Option<Contribution> {
@@ -24,22 +33,22 @@ impl NewContract {
         return contribution
     }
 
-    pub fn proposal_by_owner(&self, owner_id: AccountId) -> Option<Proposal> {
-        let proposal = self.proposal_per_owner.get(&owner_id);
-        return proposal;
+    pub fn proposal_by_owner(&self, owner_id: AccountId) -> Option<ProposalJSON> {
+        let proposal = self.proposal_per_owner.get(&owner_id).unwrap();
+        return self.proposal_by_id(proposal.id);
     }
 
      
-     pub fn proposals_by_id(&self, from_index: Option<U128>, limit: Option<u64>) -> Vec<Proposal> {
+     pub fn proposals_by_id(&self, from_index: Option<U128>, limit: Option<u64>) -> Vec<ProposalJSON> {
         
         let start = u128::from(from_index.unwrap_or(U128(0)));
 
         
-        self.proposal_by_id.keys()
+        return self.proposal_metadata_by_id.keys()
             .skip(start as usize) 
             .take(limit.unwrap_or(50) as usize) 
             .map(|proposal_id| self.proposal_by_id(proposal_id.clone()).unwrap())
-            .collect()
+            .collect();
     }
 
     pub fn contributions_by_id(&self, from_index: Option<U128>, limit: Option<u64>) -> Vec<Contribution> {
@@ -53,7 +62,7 @@ impl NewContract {
             .collect();
     }
 
-    pub fn contributions_for_user(
+    pub fn contributions_per_user(
         &self,
         account_id: AccountId,
         from_index: Option<U128>,

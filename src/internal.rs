@@ -33,7 +33,7 @@ pub(crate) fn refund_deposit(storage_used: u64) {
 }
 
 #[near_bindgen]
-impl NewContract {
+impl Contract {
     pub(crate) fn user_with_active_proposal(&self, account_id: AccountId) -> bool {
         //Check if user has an active proposal (status == 0)
         if !self.proposal_per_owner.contains_key(&account_id) {
@@ -46,11 +46,11 @@ impl NewContract {
         false
     }
 
-    pub(crate) fn add_proposal_to_storages(&mut self, proposal: Proposal, account_id: AccountId) {
+    pub(crate) fn add_proposal_to_storages(&mut self, proposal: Proposal, proposal_metadata: ProposalMetadata, account_id: AccountId) {
         //Update the contract proposal collections with new data
         self.proposal_by_id.insert(&proposal.id, &proposal);
         self.proposal_metadata_by_id
-            .insert(&proposal.id, &proposal.metadata);
+            .insert(&proposal.id, &proposal_metadata);
         self.proposal_per_owner.insert(&account_id, &proposal);
     }
 
@@ -58,7 +58,8 @@ impl NewContract {
         //status 1: complete ---- status 2: Inactive
         let mut proposal = self.proposal_by_id.get(&proposal_id).unwrap();
         proposal.status = status;
-        self.add_proposal_to_storages(proposal.clone(), proposal.owner.clone());
+        let proposal_metadata = self.proposal_metadata_by_id.get(&proposal_id).unwrap();
+        self.add_proposal_to_storages(proposal.clone(), proposal_metadata, proposal.owner.clone());
         env::log(
             json!({
                     "id": proposal.id.0.to_string(),
@@ -70,13 +71,12 @@ impl NewContract {
         );
     }
 
-    pub(crate) fn process_contribution(&mut self, amount: Balance, mut proposal: Proposal) {
+    pub(crate) fn process_contribution(&mut self, amount: Balance, proposal: Proposal) {
         let user = env::signer_account_id();
         let mut proposal_meta = self.proposal_metadata_by_id.get(&proposal.id).unwrap();
         Promise::new(proposal.owner.clone()).transfer(amount);
-        proposal.metadata.funds += amount;
         proposal_meta.funds += amount;
-        self.add_proposal_to_storages(proposal.clone(), proposal.owner.clone()); //Update the proposal funds attribute
+        self.add_proposal_to_storages(proposal.clone(), proposal_meta.clone(), proposal.owner.clone()); //Update the proposal funds attribute
 
         let index = U128(self.contributions_per_id.len() as u128);
         let contribution = Contribution {
@@ -126,9 +126,10 @@ impl NewContract {
             proposal.owner != env::signer_account_id(),
             "Can't contribute your own proposal"
         );
-        let current_funds = contribution_amount + proposal.metadata.funds;
+        let proposal_meta = self.proposal_metadata_by_id.get(&proposal.id).unwrap();
+        let current_funds = contribution_amount + proposal_meta.funds;
         assert!(
-            current_funds <= proposal.metadata.goal.0,
+            current_funds <= proposal_meta.goal.0,
             "Contribution higher than expected"
         );
     }

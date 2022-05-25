@@ -14,7 +14,6 @@ mod proposal;
 mod internal;
 mod enumeration;
 mod migration;
-mod xcctest;
 
 
 use crate::metadata::*;
@@ -25,31 +24,17 @@ use crate::migration::*;
 
 const ONE_NEAR: Balance = 1000000000000000000000000;
 
-
-
+#[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize, PanicOnDefault)]
-pub struct OldContract {
+pub struct Contract {
     pub owner_id: AccountId, //Contract owner
     pub proposal_per_owner: LookupMap<AccountId, Proposal>, //Link owners with Proposal
-    pub proposal_by_id: UnorderedMap<ProposalId, Proposal>, //Link proposals ID with Proposal
-    pub proposal_metadata_by_id: LookupMap<ProposalId, ProposalMetadata>, //Link Proposals ID with Proposal Metadata  
+    pub proposal_by_id: LookupMap<ProposalId, Proposal>, //Link proposals ID with Proposal
+    pub proposal_metadata_by_id: UnorderedMap<ProposalId, ProposalMetadata>, //Link Proposals ID with Proposal Metadata  
     pub contributions_per_user: LookupMap<AccountId, UnorderedSet<Contribution>>, //Link users and contributions
     pub contributions_per_id: UnorderedMap<ContributionId, Contribution>, //Link Contributions ID with Contribution
     pub metadata: LazyOption<ForMyFutureContractMetadata>, //Contract Metadata
     
-}
-
-#[near_bindgen]
-#[derive(BorshDeserialize, BorshSerialize, PanicOnDefault)]
-pub struct NewContract {
-    pub owner_id: AccountId, 
-    pub proposal_per_owner: LookupMap<AccountId, Proposal>, 
-    pub proposal_by_id: UnorderedMap<ProposalId, Proposal>, 
-    pub proposal_metadata_by_id: LookupMap<ProposalId, ProposalMetadata>, 
-    pub contributions_per_user: LookupMap<AccountId, UnorderedSet<Contribution>>, 
-    pub contributions_per_id: UnorderedMap<ContributionId, Contribution>, 
-    pub metadata: LazyOption<ForMyFutureContractMetadata>, 
-    pub proposal_from_migration: LookupMap<AccountId, ProposalId > //NEW FEATURE FOR MIGRATION
 }
 
 
@@ -66,7 +51,7 @@ pub enum StorageKey {
 }
 
 #[near_bindgen]
-impl NewContract {
+impl Contract {
 
     #[init]
     pub fn new_meta(owner_id: AccountId) -> Self { //Method for initialize contract 
@@ -84,8 +69,8 @@ impl NewContract {
         let this = Self {
             owner_id: owner_id,
             proposal_per_owner: LookupMap::new(StorageKey::ProposalsPerOwner.try_to_vec().unwrap()),
-            proposal_by_id: UnorderedMap::new(StorageKey::ProposalsById.try_to_vec().unwrap()),
-            proposal_metadata_by_id: LookupMap::new(
+            proposal_by_id: LookupMap::new(StorageKey::ProposalsById.try_to_vec().unwrap()),
+            proposal_metadata_by_id: UnorderedMap::new(
                 StorageKey::ProposalMetadataById.try_to_vec().unwrap(),
             ),
             contributions_per_user: LookupMap::new(
@@ -96,7 +81,6 @@ impl NewContract {
                 StorageKey::MyFutureContractMetadata.try_to_vec().unwrap(),
                 Some(&metadata),
             ),
-           proposal_from_migration: LookupMap::new(b"b".to_vec())
         };
 
         //return the Contract object

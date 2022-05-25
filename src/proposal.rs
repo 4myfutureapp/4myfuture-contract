@@ -1,7 +1,7 @@
 use crate::*;
 
 #[near_bindgen]
-impl NewContract {
+impl Contract {
     //Main contract function for create proposals
     #[payable]
     pub fn create_proposal(
@@ -22,11 +22,11 @@ impl NewContract {
         );
 
         let goal_in_yocto = U128(goal.0 * ONE_NEAR); //Parse from NEAR to Yocto
-        let index = U128((self.proposal_by_id.len() + 1) as u128);
+        let index = U128((self.proposal_metadata_by_id.len() + 1) as u128);
         let initial_storage_usage = env::storage_usage();
 
+        //Create the proposal metadata
         let proposal_metadata = ProposalMetadata {
-            //Create the proposal metadata
             title: title,
             description: description,
             goal: goal_in_yocto,
@@ -42,19 +42,16 @@ impl NewContract {
             //Inser the proposal metadata into Proposal object
             id: index,
             owner: env::signer_account_id().to_string(),
-            metadata: proposal_metadata.clone(),
-            image: images[0].clone(),
             status: 0,
         };
 
-        self.add_proposal_to_storages(proposal.clone(), env::signer_account_id()); //Update the collections
+        self.add_proposal_to_storages(proposal.clone(), proposal_metadata.clone(), env::signer_account_id()); //Update the collections
         env::log(
             json!({
                     "id":proposal.id.0.to_string(),
                     "owner": proposal.owner.to_string(),
                     "status": proposal.status,
-                    "image": proposal.image.to_string(),
-            })
+                })
             .to_string()
             .as_bytes(),
         );
