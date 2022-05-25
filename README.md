@@ -70,7 +70,7 @@ Interact with the Contract 👽
 8. contribution_for_user <--- Get the contributions made for an user
 `near view ${CONTRACT-NAME} contributions_for_user '{"account_id":"lexdev.testnet", "from_index":"0" , "limit":10}'`
 
-CONTRACT_NAME example [dev-1652466503853-68305726825054](https://explorer.testnet.near.org/accounts/dev-1652466503853-68305726825054)
+CONTRACT_NAME example [dev-1653178134167-92125643978356](https://explorer.testnet.near.org/accounts/dev-1652466503853-68305726825054)
 
 
   [smart contract]: https://docs.near.org/docs/develop/contracts/overview

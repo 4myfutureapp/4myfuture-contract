@@ -26,6 +26,7 @@ use crate::migration::*;
 const ONE_NEAR: Balance = 1000000000000000000000000;
 
 
+
 #[derive(BorshDeserialize, BorshSerialize, PanicOnDefault)]
 pub struct OldContract {
     pub owner_id: AccountId, //Contract owner
