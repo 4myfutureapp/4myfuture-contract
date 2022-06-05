@@ -1,8 +1,9 @@
 use crate::*;
 
 #[near_bindgen]
-impl NewContract {
+impl Contract {
     //Main contract function for create proposals
+    #[payable]
     pub fn create_proposal(
         &mut self,
         title: String,
@@ -21,11 +22,11 @@ impl NewContract {
         );
 
         let goal_in_yocto = U128(goal.0 * ONE_NEAR); //Parse from NEAR to Yocto
-        let index = U128((self.proposal_by_id.len() + 1) as u128);
+        let index = U128((self.proposal_metadata_by_id.len() + 1) as u128);
         let initial_storage_usage = env::storage_usage();
 
+        //Create the proposal metadata
         let proposal_metadata = ProposalMetadata {
-            //Create the proposal metadata
             title: title,
             description: description,
             goal: goal_in_yocto,
@@ -41,19 +42,16 @@ impl NewContract {
             //Inser the proposal metadata into Proposal object
             id: index,
             owner: env::signer_account_id().to_string(),
-            metadata: proposal_metadata.clone(),
-            image: images[0].clone(),
             status: 0,
         };
 
-        self.add_proposal_to_storages(proposal.clone(), env::signer_account_id()); //Update the collections
+        self.add_proposal_to_storages(proposal.clone(), proposal_metadata.clone(), env::signer_account_id()); //Update the collections
         env::log(
             json!({
                     "id":proposal.id.0.to_string(),
                     "owner": proposal.owner.to_string(),
                     "status": proposal.status,
-                    "image": proposal.image.to_string(),
-            })
+                })
             .to_string()
             .as_bytes(),
         );
@@ -62,17 +60,20 @@ impl NewContract {
                     "id": proposal.id.0.to_string(),
                     "title": proposal_metadata.title.to_string(),
                     "description": proposal_metadata.description.to_string(),
-                    "goal": proposal_metadata.goal.0 as i64,
-                    "init_date": proposal_metadata.init_date,
-                    "finish_date": proposal_metadata.finish_date,
-                    "funds": proposal_metadata.funds as i64,
+                    "goal": proposal_metadata.goal.0.to_string(),
+                    "init_date": proposal_metadata.init_date.to_string(),
+                    "finish_date": proposal_metadata.finish_date.to_string(),
+                    "funds": proposal_metadata.funds.to_string(),
                     "images": proposal_metadata.images,
                     "institution_link": proposal_metadata.institution_link.to_string(),
                     "pensum_link": proposal_metadata.pensum_link.to_string()
             })
             .to_string()
             .as_bytes(),
-        )
+        );
+        let required_storage_in_bytes = env::storage_usage() - initial_storage_usage;
+        refund_deposit(required_storage_in_bytes);
+
     }
 
     //Inactive proposal and disable funding option
@@ -96,10 +97,11 @@ impl NewContract {
         assert!(proposal.status == 0, "Proposal not active"); //Check if proposal is able to receive funding
         self.valid_contribution_amount(proposal.clone(), env::attached_deposit()); //Check if the contribution is valid
         self.process_contribution(env::attached_deposit(), proposal.clone()); //Function for process the contribution and Log the transaction
-        let proposa_meta = self.proposal_metadata_by_id.get(&proposal.id).unwrap();
-        if proposa_meta.goal.0 == proposa_meta.funds {
+        let proposa_metal = self.proposal_metadata_by_id.get(&proposal.id).unwrap();
+        if proposa_metal.goal.0 == proposa_metal.funds {
             //Check if proposal goal is reached
             self.update_proposal(proposal.id, 1); //1 for status "Complete"
         }
+        
     }
 }
